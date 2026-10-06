@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gear Tooth Undercutting Detector</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <!-- Ambient & Blueprint Background with Rotating Gears -->
+  <div class="bg-ambient-layer">
+    <div class="blueprint-grid"></div>
+    <div class="ambient-glow-1"></div>
+    <div class="ambient-glow-2"></div>
+
+    <!-- SVG Mechanical Blueprint Gear 1 (Clockwise) -->
+    <svg class="bg-gear-svg gear-top-right" viewBox="0 0 100 100">
+      <path d="M50 25 A25 25 0 1 0 50 75 A25 25 0 1 0 50 25 M50 15 L53 5 L47 5 Z M50 85 L53 95 L47 95 Z M15 50 L5 53 L5 47 Z M85 50 L95 53 L95 47 Z M25 25 L18 18 L22 14 Z M75 75 L82 82 L78 86 Z M75 25 L82 18 L86 22 Z M25 75 L18 82 L14 78 Z" />
+      <circle cx="50" cy="50" r="14" stroke-dasharray="3 3"/>
+    </svg>
+
+    <!-- SVG Mechanical Blueprint Gear 2 (Counter-Clockwise) -->
+    <svg class="bg-gear-svg gear-bottom-left" viewBox="0 0 100 100">
+      <path d="M50 28 A22 22 0 1 0 50 72 A22 22 0 1 0 50 28 M50 16 L54 6 L46 6 Z M50 84 L54 94 L46 94 Z M16 50 L6 54 L6 46 Z M84 50 L94 54 L94 46 Z M26 26 L19 19 L23 15 Z M74 74 L81 81 L77 85 Z M74 26 L81 19 L85 23 Z M26 74 L19 81 L15 77 Z" />
+      <circle cx="50" cy="50" r="10"/>
+    </svg>
+
+    <!-- SVG Mechanical Blueprint Gear 3 (Intermeshed) -->
+    <svg class="bg-gear-svg gear-intermeshed" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="35" stroke-dasharray="4 2"/>
+      <circle cx="50" cy="50" r="16"/>
+    </svg>
+  </div>
+
+  <div class="container">
+    <header>
+      <div class="badge badge-info">
+        <span style="display:inline-block; animation: rotateClockwise 8s linear infinite;">⚙️</span>
+        Computer Vision &bull; Transfer Learning
+      </div>
+      <h1>Gear Tooth Undercutting Detector</h1>
+      <p class="subtitle">Deep learning tooth root contour scanner. Upload any gear photograph to detect manufacturing undercutting and trochoidal root notches.</p>
+    </header>
+
+    <!-- Status Banner with Radar Pulse -->
+    <div class="status-card">
+      <div class="status-left">
+        <div class="indicator-wrapper">
+          <div id="statusIndicator" class="status-indicator indicator-waiting"></div>
+        </div>
+        <div class="status-text">
+          <strong id="statusTitle">Connecting to Vision Engine...</strong>
+          <span id="statusSubtitle">Checking deep learning checkpoints...</span>
+        </div>
+      </div>
+      <div id="datasetBadge" class="badge badge-warning">Dataset: Scanning...</div>
+    </div>
+
+    <!-- Main Diagnostic Grid -->
+    <div class="main-grid">
+      <!-- Input Panel -->
+      <div class="card">
+        <h2 class="card-title">
+          <span>📷</span> Upload Gear Photograph
+        </h2>
+
+        <!-- Dropzone -->
+        <div id="dropzone" class="dropzone">
+          <div class="floating-icon">⚙️</div>
+          <p class="dropzone-text">Drag & drop gear photograph here</p>
+          <p class="dropzone-hint">Supports JPG, JPEG, and PNG formats (phone photos & macro shots)</p>
+          <input type="file" id="fileInput" accept=".jpg,.jpeg,.png">
+        </div>
+
+        <!-- Image Preview with Laser Scanner HUD -->
+        <div id="previewContainer" class="preview-container">
+          <div id="previewViewport" class="scan-viewport">
+            <div class="hud-corner corner-tl"></div>
+            <div class="hud-corner corner-tr"></div>
+            <div class="hud-corner corner-bl"></div>
+            <div class="hud-corner corner-br"></div>
+            <div class="laser-beam"></div>
+            <div class="reticle-overlay"></div>
+            <img id="imagePreview" src="" alt="Gear Preview">
+          </div>
+          <div>
+            <button type="button" id="changeImgBtn" class="change-btn">
+              <span>🔄</span> Choose a different photograph
+            </button>
+          </div>
+        </div>
+
+        <!-- Analyze Gear Button -->
+        <button type="button" id="analyzeBtn" class="btn-analyze" disabled>
+          <span class="spinner" id="btnSpinner"></span>
+          <span id="btnText">Analyze Gear</span>
+        </button>
+      </div>
+
+      <!-- Result Panel -->
+      <div class="card">
+        <h2 class="card-title">
+          <span>🔬</span> Diagnostic Results
+        </h2>
+
+        <!-- Empty State Placeholder -->
+        <div id="placeholderResult" class="placeholder-result">
+          <div class="placeholder-icon">🔍</div>
+          <p>Upload a gear photograph on the left and click <strong>"Analyze Gear"</strong> to inspect root fillets and profile shifts.</p>
+        </div>
+
+        <!-- Active Result Card -->
+        <div id="resultCard" class="result-card">
+          <!-- Analyzed Image with Scanning HUD -->
+          <div style="text-align: center;">
+            <div id="resultViewport" class="scan-viewport active-scan">
+              <div class="hud-corner corner-tl"></div>
+              <div class="hud-corner corner-tr"></div>
+              <div class="hud-corner corner-bl"></div>
+              <div class="hud-corner corner-br"></div>
+              <div class="laser-beam"></div>
+              <div class="reticle-overlay"></div>
+              <img id="resultImage" src="" alt="Analyzed Gear">
+            </div>
+          </div>
+
+          <!-- Trained Prediction State -->
+          <div id="trainedResultSection" style="display: none;">
+            <div id="resultBadge" class="result-badge">
+              <div id="resultTitle" class="result-title">UNDERCUT</div>
+              <div id="confidenceVal" class="confidence-val">Confidence: <span id="confNum">0.0</span>%</div>
+            </div>
+
+            <!-- Animated Confidence & Probability Meters -->
+            <div class="meter-group">
+              <div>
+                <div class="meter-header">
+                  <span>Undercut Probability</span>
+                  <span id="probUndercutVal" style="color: #f87171;">0%</span>
+                </div>
+                <div class="meter-bar">
+                  <div id="probUndercutBar" class="meter-fill fill-undercut" style="width: 0%;"></div>
+                </div>
+              </div>
+
+              <div>
+                <div class="meter-header">
+                  <span>No Undercut Probability</span>
+                  <span id="probNoUndercutVal" style="color: #34d399;">0%</span>
+                </div>
+                <div class="meter-bar">
+                  <div id="probNoUndercutBar" class="meter-fill fill-no-undercut" style="width: 0%;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Untrained Fallback Alert -->
+          <div id="untrainedResultSection" style="display: none;">
+            <div class="guidance-box" style="margin-top: 0;">
+              <div class="guidance-header">
+                <span>⚠️</span> CNN Model Awaiting Training Images
+              </div>
+              <p style="font-size: 0.9rem; color: #cbd5e1; margin-bottom: 0.75rem;">
+                Image uploaded successfully! Real predictions cannot be fabricated until labeled gear photographs are placed in the dataset directories.
+              </p>
+              <code class="path-code" id="pathUndercut">dataset/undercut/</code>
+              <code class="path-code" id="pathNoUndercut">dataset/no_undercut/</code>
+              <p style="font-size: 0.85rem; color: #94a3b8; margin-top: 0.75rem;">
+                Then run:
+              </p>
+              <code class="path-code">python train_image_classifier.py</code>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dataset & Setup Guidance -->
+    <div class="guidance-box">
+      <div class="guidance-header">
+        <span>📁</span> Active Transfer Learning Pipeline Specs
+      </div>
+      <p style="font-size: 0.9rem; color: #cbd5e1; margin-bottom: 0.75rem;">
+        Using <strong>MobileNetV2</strong> deep feature extractor with automated letterbox cropping, ImageNet normalization, and multi-scale tooth root contour analysis.
+      </p>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.5rem;">
+        <div>
+          <strong style="color: #f87171; font-size: 0.88rem;">1. Undercut Gear Photographs</strong>
+          <span style="font-size: 0.8rem; color: #94a3b8; display: block;">Gears exhibiting root undercut notches / necking:</span>
+          <code class="path-code">{{ paths.undercut }}</code>
+        </div>
+        <div>
+          <strong style="color: #34d399; font-size: 0.88rem;">2. Normal / No Undercut Photographs</strong>
+          <span style="font-size: 0.8rem; color: #94a3b8; display: block;">Gears with standard full fillets & involute profiles:</span>
+          <code class="path-code">{{ paths.no_undercut }}</code>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      Gear Tooth Undercutting Detector &bull; High-Performance Computer Vision Diagnostic Suite
+    </footer>
+  </div>
+
+  <script>
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const previewContainer = document.getElementById('previewContainer');
+    const previewViewport = document.getElementById('previewViewport');
+    const imagePreview = document.getElementById('imagePreview');
+    const changeImgBtn = document.getElementById('changeImgBtn');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const btnSpinner = document.getElementById('btnSpinner');
+    const btnText = document.getElementById('btnText');
+
+    const placeholderResult = document.getElementById('placeholderResult');
+    const resultCard = document.getElementById('resultCard');
+    const resultViewport = document.getElementById('resultViewport');
+    const resultImage = document.getElementById('resultImage');
+    const trainedResultSection = document.getElementById('trainedResultSection');
+    const untrainedResultSection = document.getElementById('untrainedResultSection');
+
+    const resultBadge = document.getElementById('resultBadge');
+    const resultTitle = document.getElementById('resultTitle');
+    const confNum = document.getElementById('confNum');
+    const probUndercutVal = document.getElementById('probUndercutVal');
+    const probUndercutBar = document.getElementById('probUndercutBar');
+    const probNoUndercutVal = document.getElementById('probNoUndercutVal');
+    const probNoUndercutBar = document.getElementById('probNoUndercutBar');
+
+    const statusIndicator = document.getElementById('statusIndicator');
+    const statusTitle = document.getElementById('statusTitle');
+    const statusSubtitle = document.getElementById('statusSubtitle');
+    const datasetBadge = document.getElementById('datasetBadge');
+
+    let selectedFile = null;
+
+    // Check Model & Dataset Status
+    async function checkModelStatus() {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        
+        datasetBadge.textContent = `Dataset: ${data.dataset_counts.undercut} Undercut / ${data.dataset_counts.no_undercut} Normal`;
+
+        if (data.is_model_trained) {
+          statusIndicator.className = 'status-indicator indicator-online';
+          statusTitle.textContent = `Vision Model Online (${data.model_name.toUpperCase()})`;
+          statusSubtitle.textContent = `Loaded checkpoint: ${data.model_path.split('\\\\').pop()}`;
+          datasetBadge.className = 'badge badge-success';
+        } else {
+          statusIndicator.className = 'status-indicator indicator-waiting';
+          statusTitle.textContent = 'Vision Model: Awaiting Labeled Training Images';
+          statusSubtitle.textContent = 'Place images in dataset folders and execute train_image_classifier.py';
+          datasetBadge.className = 'badge badge-warning';
+        }
+      } catch (err) {
+        console.error('Failed to fetch status:', err);
+      }
+    }
+
+    checkModelStatus();
+
+    // Dropzone Events
+    dropzone.addEventListener('click', () => fileInput.click());
+    changeImgBtn.addEventListener('click', () => fileInput.click());
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropzone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        dropzone.classList.add('dragover');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropzone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+      });
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+      const files = e.dataTransfer.files;
+      if (files.length > 0) handleFile(files[0]);
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) handleFile(e.target.files[0]);
+    });
+
+    function handleFile(file) {
+      if (!file.type.match('image/jpeg') && !file.type.match('image/png')) {
+        alert('Please upload a valid JPG or PNG photograph.');
+        return;
+      }
+      selectedFile = file;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        imagePreview.src = e.target.result;
+        previewContainer.style.display = 'block';
+        dropzone.style.display = 'none';
+        analyzeBtn.disabled = false;
+
+        // Reset previous result
+        placeholderResult.style.display = 'block';
+        resultCard.style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // Number counting animation
+    function animateValue(obj, start, end, duration) {
+      let startTimestamp = null;
+      const step = (timestamp) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+        const easeProgress = 1 - Math.pow(1 - progress, 3); // EaseOutCubic
+        const current = (start + (end - start) * easeProgress).toFixed(1);
+        obj.textContent = current;
+        if (progress < 1) {
+          window.requestAnimationFrame(step);
+        }
+      };
+      window.requestAnimationFrame(step);
+    }
+
+    // Analyze Gear Action
+    analyzeBtn.addEventListener('click', async () => {
+      if (!selectedFile) return;
+
+      analyzeBtn.disabled = true;
+      btnSpinner.style.display = 'inline-block';
+      btnText.textContent = 'Scanning Tooth Roots...';
+      previewViewport.classList.add('active-scan');
+
+      const formData = new FormData();
+      formData.append('image', selectedFile);
+
+      try {
+        const response = await fetch('/api/analyze', {
+          method: 'POST',
+          body: formData
+        });
+        const res = await response.json();
+
+        // Brief artificial pause to let the scan animation sweep
+        await new Promise(r => setTimeout(r, 600));
+
+        placeholderResult.style.display = 'none';
+        resultCard.style.display = 'flex';
+        resultImage.src = res.image_url || imagePreview.src;
+
+        if (res.has_trained_model && res.status === 'success') {
+          trainedResultSection.style.display = 'block';
+          untrainedResultSection.style.display = 'none';
+
+          const isUndercut = res.prediction === 'Undercut';
+          resultTitle.textContent = isUndercut ? 'UNDERCUT DETECTED' : 'NO UNDERCUT';
+          resultBadge.className = isUndercut ? 'result-badge result-undercut' : 'result-badge result-no-undercut';
+
+          // Animate Confidence Counter
+          animateValue(confNum, 0, res.confidence, 1200);
+
+          // Animate Probability Bars
+          const pUnder = res.probabilities['Undercut'];
+          const pNoUnder = res.probabilities['No Undercut'];
+
+          probUndercutBar.style.width = '0%';
+          probNoUndercutBar.style.width = '0%';
+
+          setTimeout(() => {
+            probUndercutBar.style.width = `${pUnder}%`;
+            probUndercutVal.textContent = `${pUnder}%`;
+
+            probNoUndercutBar.style.width = `${pNoUnder}%`;
+            probNoUndercutVal.textContent = `${pNoUnder}%`;
+          }, 100);
+
+        } else {
+          trainedResultSection.style.display = 'none';
+          untrainedResultSection.style.display = 'block';
+
+          if (res.instructions) {
+            document.getElementById('pathUndercut').textContent = res.instructions.undercut_dir;
+            document.getElementById('pathNoUndercut').textContent = res.instructions.no_undercut_dir;
+          }
+        }
+      } catch (err) {
+        alert('Analysis error: ' + err.message);
+      } finally {
+        analyzeBtn.disabled = false;
+        btnSpinner.style.display = 'none';
+        btnText.textContent = 'Analyze Gear';
+        previewViewport.classList.remove('active-scan');
+      }
+    });
+  </script>
+</body>
+</html>
